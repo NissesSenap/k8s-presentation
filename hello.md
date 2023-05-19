@@ -17,8 +17,9 @@ The content of 1st page
 Hello, world!
 
 ---
-
-# 3rd page
+<!--
+These are speaker notes.
+-->
 
 # Multi columns in Marp slide
 

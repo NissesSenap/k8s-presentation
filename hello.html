@@ -31,10 +31,23 @@
 </ul>
 </div>
 <div>
-<h2 id="column-2">Column 2</h2>
-<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-yaml"><span class="hljs-attr">kind:</span> <span class="hljs-string">v1</span>
-<span class="hljs-attr">something:</span> <span class="hljs-string">hello</span>
+<font size="6">
+<pre is="marp-pre" data-auto-scaling="downscale-only"><code class="language-yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Pod</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">default</span>
+  <span class="hljs-attr">labels:</span>
+    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">containers:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-attr">image:</span> <span class="hljs-string">nginx:1.13.9</span>
+    <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span>
+    <span class="hljs-attr">ports:</span>
+    <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">http</span>
+      <span class="hljs-attr">containerPort:</span> <span class="hljs-number">80</span>
 </code></pre>
+</font>
 </div>
 </div>
 </section>

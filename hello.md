@@ -37,12 +37,26 @@ These are speaker notes.
 </div>
 <div>
 
-## Column 2
+<font size="6">
 
 ```yaml
-kind: v1
-something: hello
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  namespace: default
+  labels:
+    app: nginx
+spec:
+  containers:
+  - image: nginx:1.13.9
+    name: nginx
+    ports:
+    - name: http
+      containerPort: 80
 ```
+
+</font>
 
 </div>
 </div>

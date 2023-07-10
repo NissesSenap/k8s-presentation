@@ -27,9 +27,9 @@ section {
 - Ingress
 - cert-manager/external dns
 - Cronjob
+- ArgoCD
 - External secrets
 - Disk
-- ArgoCD
 - Best practices
   - Security
   - Antiaffinity
@@ -257,4 +257,367 @@ Ingress-nginx is probably the most well used ingress implementation.
 
 ---
 
-stfuff
+## Cert-manager and External DNS
+
+- Generate certificates
+  - ACME
+  - Self-signed
+- Create DNS entry depending on your ingress config
+
+<!--
+letsencrypt came up with ACME and my guess is that the majority of all k8s clusters uses letsencrypt even if you are an enterprise.
+-->
+
+---
+
+## Cronjob
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- Kubernetes Jobs
+- Close to linux cronjobs
+- Can configure to run 1 at the time
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: hello
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: hello
+            image: busybox:1.28
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - date; echo Hello from the Kubernetes cluster
+          restartPolicy: OnFailure
+```
+
+</font>
+
+</div>
+</div>
+
+---
+
+## ArgoCD
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- GitOps
+- [https://opengitops.dev/](https://opengitops.dev/)
+  - Declarative
+  - Versioned and Immutable
+  - Pulled Automatically
+  - Continuously Reconciled
+- ArgoCD
+  - Built on Application
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  labels:
+    team: plateng
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: grafana
+    server: https://kubernetes.default.svc
+  project: infra
+  source:
+    path: infra/grafana
+    repoURL: git@github.com:example/gitops.git
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+</font>
+
+</div>
+</div>
+
+---
+
+## External-secrets
+
+- Used to not check-in secrets to your GitOps repo
+- Among the easier solutions around
+
+---
+
+## Disk
+
+- Don't use disk
+- Build stateless application
+- clusterStorage
+- emptyDir
+
+<!--
+In general don't use disk unless you have a really good reason to.
+We should always aim to build stateless applications.
+If disk aim to make it a scratch disk for temporary data.
+-->
+
+---
+
+## Best practices
+
+- Security
+- Antiaffinity
+- Priorityclasses
+- Pod Disruption Budget (PDB)
+- Horizontal Pod Autoscaling (HPA)
+
+---
+
+### Security
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- Never run your container as root
+- Define securityContext
+- Disable automountServiceAccountToken
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: podinfo
+  name: podinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: podinfo
+  template:
+    metadata:
+      labels:
+        app: podinfo
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - image: ghcr.io/stefanprodan/podinfo:6.3.6
+          imagePullPolicy: IfNotPresent
+          name: podinfo
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1000
+            seccompProfile:
+              type: RuntimeDefault
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+Kubernets is hard!
+I'm a big believer in OPA or Kyverno used for mutating webhooks
+You as a developer shouldn't need  to know all security context settings.
+The above context is only security settings for a pod. We haven't even spoken about other settings that you should do for a deployment.
+-->
+
+---
+
+### Antiaffinity
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- requiredDuringSchedulingIgnoredDuringExecution
+- preferredDuringSchedulingIgnoredDuringExecution
+- Use to spread out workloads
+  - hosts
+  - zones
+
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  selector:
+    matchLabels:
+      app: store
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: store
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - store
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: redis-server
+        image: redis:3.2-alpine
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+podAntiAffinity rule tells the scheduler to avoid placing multiple replicas with the app=store label on a single node
+-->
+
+---
+
+### Priorityclasses
+
+- Help scheduler
+  - priority
+  - preemption
+- `system-cluster-critical` and `system-node-critical`
+- Company specific priorityClasses
+  - tenant-high
+  - tenant-medium
+  - tenant-low
+
+---
+
+### Horizontal Pod Autoscaling (HPA)
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- Scale up and down your app
+- Never to 0
+- Can scale on other metrics than CPU and Memory
+  - Number of Pub/sub messages
+  - Incoming http requests
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+```
+
+</font>
+
+</div>
+</div>
+
+---
+
+### Pod Disruption Budget (PDB)
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- Make sure your app is always up
+- Use carefully
+  - Can stop upgrades of nodes
+- PDB & HPA don't talk
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api
+  namespace: production
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: api
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+We are always patching nodes, and in the future it will be automated.
+Use PDBs or get downtime!
+
+HPA minReplicas has to be 1 more then PDB minAvailable.
+PDB won't trigger a scale up to make a node drain work.
+-->

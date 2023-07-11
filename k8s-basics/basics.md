@@ -277,7 +277,7 @@ letsencrypt came up with ACME and my guess is that the majority of all k8s clust
 
 - Kubernetes Jobs
 - Close to linux cronjobs
-- Can configure to run 1 at the time
+- Can configure to run 1 at a time
 
 </div>
 <div>
@@ -366,7 +366,7 @@ spec:
 
 ## External-secrets
 
-- Used to not check-in secrets to your GitOps repo
+- Used to avoid checking-in secrets to your GitOps repo
 - Among the easier solutions around
 
 ---

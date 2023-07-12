@@ -162,6 +162,200 @@ spec:
 
 ---
 
+## More deployment config
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- probes
+  - liveliness
+  - readiness
+  - startup
+- resources
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.13.9-alpine
+        name: nginx
+        resources:
+          requests:
+            memory: "150Mi"
+            cpu: "0.05"
+          limits:
+            memory: "250Mi"
+        ports:
+        - name: http
+          containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+## liveliness vs readiness
+
+Startup is used for applications that have long startup time, like java
+
+In general only use readiness
+
+If Readiness fails it will put your pods at not ready and it won't get any traffic.
+
+If Liveness fails, it will restart the pod, for ever.
+
+https://elastisys.com/the-difference-between-liveness-and-readiness-probes-in-kubernetes/
+
+## Resources
+
+- don't add limits on CPU, it just creates really strange issues that is really hard to find.
+- For really big application where you know that you will take all the resources it's generally a good idea to keep request and limits the same.
+-->
+
+---
+
+## Even more deployment config
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- volume mounts
+- env vars
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.13.9-alpine
+        name: nginx
+        env:
+          - name: FOO
+            value: bar
+        ports:
+        - name: http
+          containerPort: 80
+        volumeMounts:
+          - mountPath: /app/config/ssh
+            name: ssh-known-hosts
+      volumes:
+        - name: ssh-known-hosts
+          configMap:
+            name: argocd-ssh-known-hosts-cm
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+- env can get data from configmap and secrets as well
+- volumes can of course also be emptyDir and disk
+- disk aka PVC needs to be created separately on a deployment
+-->
+
+---
+
+### Final deployment config
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- nodeSelector
+- Normally only used for specific hardware
+  - extra memory
+  - GPU
+  - etc.
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      nodeSelector:
+        group: gpu
+      containers:
+      - image: nginx:1.13.9-alpine
+        name: nginx
+        ports:
+        - name: http
+          containerPort: 80
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+In general only used for specific hardware
+-->
+
+---
+
 ## Service
 
 <div class="grid grid-cols-2 gap-4">
@@ -620,4 +814,45 @@ Use PDBs or get downtime!
 
 HPA minReplicas has to be 1 more then PDB minAvailable.
 PDB won't trigger a scale up to make a node drain work.
+-->
+
+---
+
+## GCP workloadIdentity
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- IAM
+- WorkloadIdentity
+- Use SA in deployment
+  - Set deployment.spec.template.spec.serviceAccountName
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api
+  namespace: production
+  annotations:
+      iam.gke.io/gcp-service-account: api-sa@example-project1.iam.gserviceaccount.com
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+All the clouds have a solution like this and it the ports the workloadIdentity that exists in VMs and makes it possible to use on pods.
+This way you don't have to use secrets, instead you can use IAM.
+
+The annotation that you make have to match with the SA you create in GCP IAM.
+
+In deployment
 -->

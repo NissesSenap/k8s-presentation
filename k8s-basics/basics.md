@@ -302,6 +302,60 @@ spec:
 
 ---
 
+### Final deployment config
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- nodeSelector
+- Normally only used for specific hardware
+  - extra memory
+  - GPU
+  - etc.
+
+</div>
+<div>
+
+<font size="6">
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx
+  name: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      nodeSelector:
+        group: gpu
+      containers:
+      - image: nginx:1.13.9-alpine
+        name: nginx
+        ports:
+        - name: http
+          containerPort: 80
+```
+
+</font>
+
+</div>
+</div>
+
+<!--
+In general only used for specific hardware
+-->
+
+---
+
 ## Service
 
 <div class="grid grid-cols-2 gap-4">

@@ -21,6 +21,7 @@ section {
 
 - Infrastructure As Code
 - Terraform vs OpenTofu
+- plan and apply
 - Providers
 - Resources
 - Data
@@ -61,6 +62,53 @@ IAC IS NICE, especially for one off, documentation isn't good enough.
 <!--
 I am no lawyer, do your own research if it's okay for you to use terraform in your own environment.
 -->
+
+---
+
+## Plan & apply
+
+<div class="grid grid-cols-2 gap-4">
+<div>
+
+- terraform plan
+  - View current status
+  - See what happens before applying changes
+- terraform apply
+  - Same as plan
+  - Asks you to approve any changes
+
+</div>
+<div>
+
+<font size="6">
+
+```shell
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.foo.google_service_account.service_account will be created
+  + resource "google_service_account" "service_account" {
+      + account_id   = "hello"
+      + disabled     = false
+      + display_name = "hello"
+      + email        = (known after apply)
+      + id           = (known after apply)
+      + member       = (known after apply)
+      + name         = (known after apply)
+      + project      = "mega-project-id"
+      + unique_id    = (known after apply)
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
+
+</font>
+
+</div>
+</div>
 
 ---
 
